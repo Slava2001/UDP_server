@@ -2,10 +2,12 @@
 #define INCLUDE_UTIL_H
 
 #include <stdio.h>
+#include <errno.h>
 
 extern int debug_level;
-#define log_error(fmt, ...) fprintf(stderr, "%s(): "fmt, __func__, ##__VA_ARGS__)
-#define log_info(fmt, ...) fprintf(stderr, "%s(): "fmt, __func__, ##__VA_ARGS__)
-#define debug_log(lvl, fmt, ...) if(debug_level >= lvl) log_info(fmt, ##__VA_ARGS__)
+#define log_error(fmt, ...) fprintf(stderr, "%s(): "fmt"\n", __func__, ##__VA_ARGS__)
+#define log_perror(fmt, ...) fprintf(stderr, "%s(): "fmt" Errno: %d(%s)\n", __func__, ##__VA_ARGS__, errno, strerror(errno))
+#define log_info(fmt, ...) fprintf(stderr, "%s(): "fmt"\n", __func__, ##__VA_ARGS__)
+#define log_debug(lvl, fmt, ...) if(debug_level >= lvl) log_info(fmt, ##__VA_ARGS__)
 
 #endif // INCLUDE_UTIL_H

@@ -2,6 +2,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "server.h"
 #include "util.h"
 
 int debug_level = 0;
@@ -22,10 +23,23 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    log_info("Hello, world!\n");
-    debug_log(1, "debug lvl > 1\n");
-    debug_log(2, "debug lvl > 2\n");
-    debug_log(3, "debug lvl > 3\n");
+    server_t server;
+
+    if (init_server(&server)) {
+        log_error("Failed to init server\n");
+        return -1;
+    };
+
+    uint8_t buff[256];
+
+    while(1) {
+        int rc = recv_dgram(&server, buff, 256);
+        if (rc < 0) {
+            log_info("Failed to recv msg");
+            continue;
+        } 
+        log_info("msg: %*s", rc, buff);
+    }
 
     return 0;
 }
