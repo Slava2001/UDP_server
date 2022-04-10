@@ -48,6 +48,7 @@ int recv_dgram(server_t *server, uint8_t *buff, uint32_t size) {
         log_error("Failed to recv msg. msg to long");
         return -1;
     }
+    log_debug(1, "recv len: %d", rc);
     return rc;
 }
 

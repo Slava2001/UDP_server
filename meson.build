@@ -1,4 +1,4 @@
-project('UDP_server', 'c', version: '0.0.0')
+project('UDP_server', 'c', version: '0.1.0')
 
 c_flag = ['-Wall',
           '-Wextra',
@@ -6,8 +6,13 @@ c_flag = ['-Wall',
 
 includes = include_directories('include')
 
-src = ['src/main.c',
-       'src/server.c']
+server_src = ['src/main.c',
+              'src/server.c',
+              'src/tlv_parser.c']
 
-executable('server', src, c_args: c_flag, include_directories: includes)
-executable('client', 'src/simple_client.c', c_args: c_flag, include_directories: includes)
+executable('server', server_src, c_args: c_flag, include_directories: includes)
+
+client_src = ['src/simple_client.c',
+              'src/tlv_parser.c']
+
+executable('client', client_src, c_args: c_flag, include_directories: includes)
