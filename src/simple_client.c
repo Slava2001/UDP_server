@@ -67,6 +67,10 @@ int main(int argc, char *argv[]) {
     command.tag = 0xdead;
     packet_len = tlv_parse_put(&command, buff, BUFF_SIZE, &end_ptr);
 
+    command.tag = 0xabcd;
+    packet_len = tlv_parse_put(&command, buff, BUFF_SIZE, &end_ptr);
+
+
     while(1) {
         int rc = sendto(fd, buff, packet_len, 0, (const struct sockaddr *)&server_addr, sizeof(server_addr));
         log_debug(1, "send rc: %d", rc);

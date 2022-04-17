@@ -1,14 +1,21 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <poll.h>
 
 #include "server.h"
 #include "util.h"
 #include "tlv_parser.h"
+#include "commands_proc.h"
 
 #define BUFF_SIZE 256
 
 int debug_level = 0;
+
+enum FDS {
+    SERVER_FD,
+    FDS_COUNT
+};
 
 int main(int argc, char *argv[]) {
     while(1) {
@@ -26,36 +33,39 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    struct pollfd fds[FDS_COUNT] = {};
+    
     server_t server;
-
-    if (init_server(&server)) {
+    if (init_server(&server, &fds[SERVER_FD])) {
         log_error("Failed to init server\n");
         return -1;
     };
 
     uint8_t buff[BUFF_SIZE];
+    int recv_size;
 
     while(1) {
-        int recv_size = recv_dgram(&server, buff, BUFF_SIZE);
-        if (recv_size < 0) {
-            log_info("Failed to recv msg");
-            continue;
-        } 
 
-        uint8_t *end_ptr = NULL;
-        do {
-            command_t c = tlv_parse_get(buff, recv_size, &end_ptr);
-            log_raw("recv command: tag: 0x%04x len: 0x%04x data: ", c.tag, c.length);
-            
-            if (c.tag == 0xbeef) {
-                log_raw("%s\n", c.data);
-            } else {
-                for (int i = 0; i < c.length; ++i) {
-                    log_raw("%02X", c.data[i]);
+        if (poll(fds, FDS_COUNT, -1) < 0) {
+            log_perror("Failed in poll.");
+            return -1;
+        }
+        
+        if (fds[SERVER_FD].revents) {
+            recv_size = recv_dgram(&server, buff, BUFF_SIZE);
+            if (recv_size < 0) {
+                log_info("Failed to recv msg");
+                continue;
+            } 
+       
+            uint8_t *end_ptr = NULL;
+            do {
+                command_t c = tlv_parse_get(buff, recv_size, &end_ptr);
+                if (command_proc(&c)) {
+                    log_error("Failed to proccesing command");
                 }
-                log_raw("\n");
-            }
-        } while(end_ptr);
+            } while(end_ptr);
+        }
     }
     return 0;
 }
