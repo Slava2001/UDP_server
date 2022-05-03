@@ -74,7 +74,8 @@ int main(int argc, char *argv[]) {
     while(1) {
         int rc = sendto(fd, buff, packet_len, 0, (const struct sockaddr *)&server_addr, sizeof(server_addr));
         log_debug(1, "send rc: %d", rc);
-        usleep(500000);
+        //usleep(500000);
+        getchar();
     }
     close(fd);
     return 0;

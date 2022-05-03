@@ -12,10 +12,9 @@
 
 int debug_level = 0;
 
-enum FDS {
-    SERVER_FD,
-    FDS_COUNT
-};
+#define SERVER_FD 0
+#define MAX_FDS_COUNT 10
+
 
 int main(int argc, char *argv[]) {
     while(1) {
@@ -28,29 +27,39 @@ int main(int argc, char *argv[]) {
             debug_level++;
             break;
         default:
-            log_error("Unhandled argument: %c\n", c);
+            log_error("Unhandled argument: %c", c);
             return 1;
         }
     }
 
-    struct pollfd fds[FDS_COUNT] = {};
+    struct pollfd fds[MAX_FDS_COUNT] = {};
+    for (int i = 1; i < MAX_FDS_COUNT; ++i) {
+        fds[i].fd = -1;
+    }
+    command_t cmds[MAX_FDS_COUNT] = {};
     
     server_t server;
     if (init_server(&server, &fds[SERVER_FD])) {
-        log_error("Failed to init server\n");
+        log_error("Failed to init server");
         return -1;
     };
+
+    if (init_commands()) {
+        log_error("Failed to init commands");
+        return -1;
+    }
 
     uint8_t buff[BUFF_SIZE];
     int recv_size;
 
     while(1) {
 
-        if (poll(fds, FDS_COUNT, -1) < 0) {
+        int rc;
+        if ((rc = poll(fds, MAX_FDS_COUNT, -1)) < 0) {
             log_perror("Failed in poll.");
             return -1;
         }
-        
+        log_debug(1, "poll rc: %d", rc);
         if (fds[SERVER_FD].revents) {
             recv_size = recv_dgram(&server, buff, BUFF_SIZE);
             if (recv_size < 0) {
@@ -61,11 +70,42 @@ int main(int argc, char *argv[]) {
             uint8_t *end_ptr = NULL;
             do {
                 command_t c = tlv_parse_get(buff, recv_size, &end_ptr);
-                if (command_proc(&c)) {
-                    log_error("Failed to proccesing command");
+                struct pollfd fd;
+
+                if (get_command_fd(&c, &fd)) {
+                    log_error("Failed to get command fd");
+                    continue;
                 }
+
+                int i = 1;
+                do {
+                    if (fds[i].fd == -1 || fds[i].fd == fd.fd) {
+                        break;
+                    }
+                    ++i;
+                } while(i < MAX_FDS_COUNT);
+                if (i >= MAX_FDS_COUNT) {
+                    log_error("FD queue is full");
+                    return -1;
+                }
+                
+                fds[i] = fd;
+
+                log_debug(1, "i: %d", i);
+                
+                // buffer buff cannot be changed until all commands have been executed
+                cmds[i] = c;
             } while(end_ptr);
         }
+
+        for (int i = 1; i < MAX_FDS_COUNT; ++i) {
+            if (fds[i].revents) {
+                if (command_proc(&cmds[i])) {
+                    log_error("Failed to proccesing command");
+                }
+                fds[i].fd = -1;
+            }
+        }              
     }
     return 0;
 }

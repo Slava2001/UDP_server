@@ -40,7 +40,7 @@ int get_command_fd(const command_t *c, struct pollfd *fd) {
             return commands[i].get_command_fd(&commands[i], fd);
         }
     }
-    log_error("Failed to proc command. Unknown command tag: 0x%04x", c->tag);
+    log_error("Failed to get command fd. Unknown command tag: 0x%04x", c->tag);
     return -1;
 }
 
@@ -59,15 +59,16 @@ int command_proc(const command_t *c) {
 
 
 int init_show_data_as_string_fd(struct command_desc *cd) {
-    cd->fd = 1; //stdout
+    cd->fd = 2; //stderr
     return 0;
 }
 
 int get_show_data_as_string_fd(struct command_desc *cd, struct pollfd *fd) {
+    log_debug(1, "Enter");
     fd->fd = cd->fd;
     fd->events = POLLOUT;
     fd->revents = 0;
-    return -1;
+    return 0;
 }
 
 int show_data_as_string(const command_t *c) {
@@ -76,6 +77,7 @@ int show_data_as_string(const command_t *c) {
 }
 
 int init_show_data_as_byte_array_fd(struct command_desc *cd) {
+    log_debug(1, "Enter");
     cd->fd = 1; //stdout
     return 0;
 }
@@ -84,7 +86,7 @@ int get_show_data_as_byte_array_fd(struct command_desc *cd, struct pollfd *fd) {
     fd->fd = cd->fd;
     fd->events = POLLOUT;
     fd->revents = 0;
-    return -1;
+    return 0;
 }
 
 int show_data_as_byte_array(const command_t *c) {

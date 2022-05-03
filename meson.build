@@ -2,7 +2,8 @@ project('UDP_server', 'c', version: '0.1.0')
 
 c_flag = ['-Wall',
           '-Wextra',
-          '-Werror']
+          '-Werror',
+          '-g3']
 
 includes = include_directories('include')
 
