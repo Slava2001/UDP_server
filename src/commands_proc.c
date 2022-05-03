@@ -12,23 +12,25 @@ struct command_desc {
     int (*command_proc)(struct command_desc *cd, const command_t *c);
 };
 
-int init_show_data_as_string_fd(struct command_desc *cd);
+int init_show_data_as_string(struct command_desc *cd);
 int get_show_data_as_string_pollfd(struct command_desc *cd, struct pollfd *fd);
 int show_data_as_string(struct command_desc *cd, const command_t *c);
 
-int init_show_data_as_byte_array_fd(struct command_desc *cd);
+int init_show_data_as_byte_array(struct command_desc *cd);
 int get_show_data_as_byte_array_pollfd(struct command_desc *cd, struct pollfd *fd);
 int show_data_as_byte_array(struct command_desc *cd, const command_t *c);
 
-int init_timer_fd(struct command_desc *cd);
+int init_show_data_as_byte_array_fd(struct command_desc *cd);
 int get_timer_pollfd(struct command_desc *cd, struct pollfd *fd);
 int waiting_timer(struct command_desc *cd, const command_t *c);
 
 #define COMMAND_COUNT 3
+
+// each command must have a unique fd!
 struct command_desc commands[COMMAND_COUNT] = {
-    { 0xbeef, -1, init_show_data_as_string_fd,     get_show_data_as_string_pollfd,     show_data_as_string     },
-    { 0xdead, -1, init_show_data_as_byte_array_fd, get_show_data_as_byte_array_pollfd, show_data_as_byte_array },
-    { 0xabcd, -1, init_timer_fd,                   get_timer_pollfd,                   waiting_timer           }
+    { 0xbeef, -1, init_show_data_as_string,        get_show_data_as_string_pollfd,     show_data_as_string     },
+    { 0xdead, -1, init_show_data_as_byte_array,    get_show_data_as_byte_array_pollfd, show_data_as_byte_array },
+    { 0xabcd, -1, init_show_data_as_byte_array_fd, get_timer_pollfd,                   waiting_timer           }
 };
 
 int init_commands() {
@@ -74,8 +76,12 @@ int command_proc(const command_t *c) {
 
 // commands func
 
-int init_show_data_as_string_fd(struct command_desc *cd) {
-    cd->fd = 2; //stderr
+int init_show_data_as_string(struct command_desc *cd) {
+    cd->fd = dup(1 /*stdout*/);
+    if (cd->fd < 0) {
+        log_perror("Create show data as string fd.");
+        return -1;
+    } 
     return 0;
 }
 
@@ -94,9 +100,13 @@ int show_data_as_string(struct command_desc *cd, const command_t *c) {
 }
 
 
-int init_show_data_as_byte_array_fd(struct command_desc *cd) {
+int init_show_data_as_byte_array(struct command_desc *cd) {
     log_debug(1, "Enter");
-    cd->fd = 1; //stdout
+    cd->fd = dup(1 /*stdout*/);
+    if (cd->fd < 0) {
+        log_perror("Create show data as byte array fd.");
+        return -1;
+    } 
     return 0;
 }
 
@@ -119,7 +129,7 @@ int show_data_as_byte_array(struct command_desc *cd, const command_t *c) {
 }
 
 
-int init_timer_fd(struct command_desc *cd) {
+int init_show_data_as_byte_array_fd(struct command_desc *cd) {
     log_debug(1, "Enter");
     
     cd->fd = timerfd_create(CLOCK_MONOTONIC, 0);

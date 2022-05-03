@@ -54,7 +54,6 @@ int main(int argc, char *argv[]) {
     int recv_size;
 
     while(1) {
-
         int rc;
         if ((rc = poll(fds, MAX_FDS_COUNT, -1)) < 0) {
             log_perror("Failed in poll.");
@@ -71,30 +70,30 @@ int main(int argc, char *argv[]) {
             uint8_t *end_ptr = NULL;
             do {
                 command_t c = tlv_parse_get(buff, recv_size, &end_ptr);
+                
                 int fd;
-
                 if ((fd = get_command_fd(&c)) < 0) {
                     log_error("Failed to get command fd");
                     continue;
                 }
 
                 int i = 1;
-                int first_emty = -1;
+                int first_empty = -1;
                 do {
                     if (fds[i].fd == fd) {
                         break;
                     }
-                    if (fds[i].fd == -1 && first_emty == -1) {
-                        first_emty = i;
+                    if (fds[i].fd == -1 && first_empty == -1) {
+                        first_empty = i;
                     }
                     ++i;
                 } while(i < MAX_FDS_COUNT);
                 if (i >= MAX_FDS_COUNT) {
-                    if (first_emty == -1) {
+                    if (first_empty == -1) {
                         log_error("FD queue is full");
                         return -1;
                     }
-                    i = first_emty;
+                    i = first_empty;
                 }
             
                 if (get_command_pollfd(&c, &fds[i])) {
@@ -113,6 +112,8 @@ int main(int argc, char *argv[]) {
                 command_t c;
                 if (queue_get_element(&cmds[i], &c)) {
                     fds[i].fd = -1;
+                    fds[i].events = 0;
+                    fds[i].revents = 0;
                     continue;
                 }
                 if (command_proc(&c)) {
