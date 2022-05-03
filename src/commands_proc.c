@@ -79,7 +79,7 @@ int get_show_data_as_string_fd(struct command_desc *cd, struct pollfd *fd) {
 
 int show_data_as_string(struct command_desc *cd, const command_t *c) {
     if (cd) {} // fix unused
-    log_raw("show_data_as_string: tag: 0x%04x len: 0x%04x data: %s\n", c->tag, c->length, c->data);
+    log_raw("show_data_as_string: "GREEN"tag: 0x%04x"NONE" len: 0x%04x data: %s\n", c->tag, c->length, c->data);
     return 0;
 }
 
@@ -100,7 +100,7 @@ int get_show_data_as_byte_array_fd(struct command_desc *cd, struct pollfd *fd) {
 
 int show_data_as_byte_array(struct command_desc *cd, const command_t *c) {
     if (cd) {} // fix unused
-    log_raw("show_data_as_byte_array: tag: 0x%04x len: 0x%04x data: ", c->tag, c->length);
+    log_raw("show_data_as_byte_array: "GREEN"tag: 0x%04x"NONE" len: 0x%04x data: ", c->tag, c->length);
     for (int i = 0; i < c->length; ++i) {
         log_raw("%02X ", c->data[i]);
     }
@@ -123,6 +123,10 @@ int init_timer_fd(struct command_desc *cd) {
 
 int get_timer_fd(struct command_desc *cd, struct pollfd *fd) {
     log_debug(1, "Enter");
+    if (fd->events == POLLIN) {
+        return 0; // timer already work
+    }
+
     struct itimerspec ts;
 	ts.it_interval.tv_sec = 3;
 	ts.it_interval.tv_nsec = 0;
@@ -145,6 +149,6 @@ int waiting_timer(struct command_desc *cd, const command_t *c) {
     if (c) {} // fix unused
     char buff[8];
     read(cd->fd, buff, 8);
-    log_info("Timer event");
+    log_raw("waiting_timer: "GREEN"tag: 0x%04x"NONE" len: 0x%04x data: Timer event\n", c->tag, c->length);
     return 0;
 }

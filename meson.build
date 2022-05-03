@@ -10,7 +10,8 @@ includes = include_directories('include')
 server_src = ['src/main.c',
               'src/server.c',
               'src/tlv_parser.c',
-              'src/commands_proc.c']
+              'src/commands_proc.c',
+              'src/queue.c']
 
 executable('server', server_src, c_args: c_flag, include_directories: includes)
 

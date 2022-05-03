@@ -7,6 +7,7 @@
 #include "util.h"
 #include "tlv_parser.h"
 #include "commands_proc.h"
+#include "queue.h"
 
 #define BUFF_SIZE 256
 
@@ -36,7 +37,7 @@ int main(int argc, char *argv[]) {
     for (int i = 1; i < MAX_FDS_COUNT; ++i) {
         fds[i].fd = -1;
     }
-    command_t cmds[MAX_FDS_COUNT] = {};
+    struct queue cmds[MAX_FDS_COUNT] = {};
     
     server_t server;
     if (init_server(&server, &fds[SERVER_FD])) {
@@ -93,17 +94,20 @@ int main(int argc, char *argv[]) {
 
                 log_debug(1, "i: %d", i);
                 
-                // buffer buff cannot be changed until all commands have been executed
-                cmds[i] = c;
+                queue_put_element(&cmds[i], &c);
             } while(end_ptr);
         }
 
         for (int i = 1; i < MAX_FDS_COUNT; ++i) {
             if (fds[i].revents) {
-                if (command_proc(&cmds[i])) {
+                command_t c;
+                if (queue_get_element(&cmds[i], &c)) {
+                    fds[i].fd = -1;
+                    continue;
+                }
+                if (command_proc(&c)) {
                     log_error("Failed to proccesing command");
                 }
-                fds[i].fd = -1;
             }
         }              
     }
