@@ -133,14 +133,14 @@ int init_timer_fd(struct command_desc *cd) {
 
 int get_timer_pollfd(struct command_desc *cd, struct pollfd *fd) {
     log_debug(1, "Enter");
-    if (fd->events == POLLIN) {
+    if (fd->fd == cd->fd) {
         return 0; // timer already work
     }
 
     struct itimerspec ts;
-	ts.it_interval.tv_sec = 3;
+	ts.it_interval.tv_sec = 1;
 	ts.it_interval.tv_nsec = 0;
-	ts.it_value.tv_sec = 3;
+	ts.it_value.tv_sec = 1;
 	ts.it_value.tv_nsec = 0;
 
 	if (timerfd_settime(cd->fd, 0, &ts, NULL) < 0) {
