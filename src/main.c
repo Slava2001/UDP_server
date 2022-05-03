@@ -71,16 +71,16 @@ int main(int argc, char *argv[]) {
             uint8_t *end_ptr = NULL;
             do {
                 command_t c = tlv_parse_get(buff, recv_size, &end_ptr);
-                struct pollfd fd;
+                int fd;
 
-                if (get_command_fd(&c, &fd)) {
+                if ((fd = get_command_fd(&c)) < 0) {
                     log_error("Failed to get command fd");
                     continue;
                 }
 
                 int i = 1;
                 do {
-                    if (fds[i].fd == -1 || fds[i].fd == fd.fd) {
+                    if (fds[i].fd == -1 || fds[i].fd == fd) {
                         break;
                     }
                     ++i;
@@ -89,8 +89,11 @@ int main(int argc, char *argv[]) {
                     log_error("FD queue is full");
                     return -1;
                 }
-                
-                fds[i] = fd;
+            
+                if (get_command_pollfd(&c, &fds[i])) {
+                    log_error("Failed to get command pollfd");
+                    continue;
+                }
 
                 log_debug(1, "i: %d", i);
                 

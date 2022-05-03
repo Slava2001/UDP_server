@@ -8,27 +8,27 @@ struct command_desc {
     uint16_t tag;
     int fd;
     int (*init_command_fd)(struct command_desc *cd);
-    int (*get_command_fd)(struct command_desc *cd, struct pollfd *fd);
+    int (*get_command_pollfd)(struct command_desc *cd, struct pollfd *fd);
     int (*command_proc)(struct command_desc *cd, const command_t *c);
 };
 
 int init_show_data_as_string_fd(struct command_desc *cd);
-int get_show_data_as_string_fd(struct command_desc *cd, struct pollfd *fd);
+int get_show_data_as_string_pollfd(struct command_desc *cd, struct pollfd *fd);
 int show_data_as_string(struct command_desc *cd, const command_t *c);
 
 int init_show_data_as_byte_array_fd(struct command_desc *cd);
-int get_show_data_as_byte_array_fd(struct command_desc *cd, struct pollfd *fd);
+int get_show_data_as_byte_array_pollfd(struct command_desc *cd, struct pollfd *fd);
 int show_data_as_byte_array(struct command_desc *cd, const command_t *c);
 
 int init_timer_fd(struct command_desc *cd);
-int get_timer_fd(struct command_desc *cd, struct pollfd *fd);
+int get_timer_pollfd(struct command_desc *cd, struct pollfd *fd);
 int waiting_timer(struct command_desc *cd, const command_t *c);
 
 #define COMMAND_COUNT 3
 struct command_desc commands[COMMAND_COUNT] = {
-    { 0xbeef, -1, init_show_data_as_string_fd,     get_show_data_as_string_fd,     show_data_as_string     },
-    { 0xdead, -1, init_show_data_as_byte_array_fd, get_show_data_as_byte_array_fd, show_data_as_byte_array },
-    { 0xabcd, -1, init_timer_fd,                   get_timer_fd,                   waiting_timer           }
+    { 0xbeef, -1, init_show_data_as_string_fd,     get_show_data_as_string_pollfd,     show_data_as_string     },
+    { 0xdead, -1, init_show_data_as_byte_array_fd, get_show_data_as_byte_array_pollfd, show_data_as_byte_array },
+    { 0xabcd, -1, init_timer_fd,                   get_timer_pollfd,                   waiting_timer           }
 };
 
 int init_commands() {
@@ -42,10 +42,20 @@ int init_commands() {
     return 0;
 }
 
-int get_command_fd(const command_t *c, struct pollfd *fd) {
+int get_command_pollfd(const command_t *c, struct pollfd *fd) {
     for (int i = 0; i < COMMAND_COUNT; ++i) {
         if (c->tag == commands[i].tag) {
-            return commands[i].get_command_fd(&commands[i], fd);
+            return commands[i].get_command_pollfd(&commands[i], fd);
+        }
+    }
+    log_error("Failed to get command pollfd. Unknown command tag: 0x%04x", c->tag);
+    return -1;
+}
+
+int get_command_fd(const command_t *c) {
+    for (int i = 0; i < COMMAND_COUNT; ++i) {
+        if (c->tag == commands[i].tag) {
+            return commands[i].fd;
         }
     }
     log_error("Failed to get command fd. Unknown command tag: 0x%04x", c->tag);
@@ -69,7 +79,7 @@ int init_show_data_as_string_fd(struct command_desc *cd) {
     return 0;
 }
 
-int get_show_data_as_string_fd(struct command_desc *cd, struct pollfd *fd) {
+int get_show_data_as_string_pollfd(struct command_desc *cd, struct pollfd *fd) {
     log_debug(1, "Enter");
     fd->fd = cd->fd;
     fd->events = POLLOUT;
@@ -90,7 +100,7 @@ int init_show_data_as_byte_array_fd(struct command_desc *cd) {
     return 0;
 }
 
-int get_show_data_as_byte_array_fd(struct command_desc *cd, struct pollfd *fd) {
+int get_show_data_as_byte_array_pollfd(struct command_desc *cd, struct pollfd *fd) {
     log_debug(1, "Enter");
     fd->fd = cd->fd;
     fd->events = POLLOUT;
@@ -121,7 +131,7 @@ int init_timer_fd(struct command_desc *cd) {
     return 0;
 }
 
-int get_timer_fd(struct command_desc *cd, struct pollfd *fd) {
+int get_timer_pollfd(struct command_desc *cd, struct pollfd *fd) {
     log_debug(1, "Enter");
     if (fd->events == POLLIN) {
         return 0; // timer already work
