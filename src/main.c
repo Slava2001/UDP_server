@@ -79,15 +79,22 @@ int main(int argc, char *argv[]) {
                 }
 
                 int i = 1;
+                int first_emty = -1;
                 do {
-                    if (fds[i].fd == -1 || fds[i].fd == fd) {
+                    if (fds[i].fd == fd) {
                         break;
+                    }
+                    if (fds[i].fd == -1 && first_emty == -1) {
+                        first_emty = i;
                     }
                     ++i;
                 } while(i < MAX_FDS_COUNT);
                 if (i >= MAX_FDS_COUNT) {
-                    log_error("FD queue is full");
-                    return -1;
+                    if (first_emty == -1) {
+                        log_error("FD queue is full");
+                        return -1;
+                    }
+                    i = first_emty;
                 }
             
                 if (get_command_pollfd(&c, &fds[i])) {
