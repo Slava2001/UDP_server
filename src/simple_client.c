@@ -39,6 +39,11 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    if (msg_len > MAX_DATA_LEN) {
+        log_error("Too long data. len: %d", msg_len);
+        return -1;
+    }
+
     int fd = socket(AF_UNIX, SOCK_DGRAM, 0);
     if (fd == -1) {
         log_perror("Failed to create socket.");
@@ -55,7 +60,7 @@ int main(int argc, char *argv[]) {
     command_t command;
     command.tag = 0xbeef;
     command.length = msg_len;
-    command.data = (uint8_t*)msg;
+    strncpy((char*)command.data, msg, msg_len);
 
     uint8_t *end_ptr = NULL;
     int packet_len = tlv_parse_put(&command, buff, BUFF_SIZE, &end_ptr);

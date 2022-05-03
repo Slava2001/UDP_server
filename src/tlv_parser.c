@@ -13,8 +13,8 @@ command_t tlv_parse_get(uint8_t *buff, uint32_t size, uint8_t **end_ptr) {
 
     memcpy((char*)&command.tag, *end_ptr, sizeof(command.tag));
     memcpy((char*)&command.length, *end_ptr + sizeof(command.tag), sizeof(command.length));
-    command.data = *end_ptr + sizeof(command.tag) + sizeof(command.length);
-
+    memcpy((char*)&command.data, *end_ptr + sizeof(command.tag)+ + sizeof(command.length), command.length);
+   
     *end_ptr += sizeof(command.tag) + sizeof(command.length) + command.length;
     if (*end_ptr >= buff+size) {
         *end_ptr = NULL;
@@ -26,6 +26,7 @@ command_t tlv_parse_get(uint8_t *buff, uint32_t size, uint8_t **end_ptr) {
 int tlv_parse_put(command_t *command, uint8_t *buff, uint32_t size, uint8_t **end_ptr) {
     assert(buff);
     assert(command);
+    assert(command->length <= MAX_DATA_LEN);
 
     if (!*end_ptr) {
         *end_ptr = buff;
