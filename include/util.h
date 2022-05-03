@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <errno.h>
+#include <string.h>
 
 extern int debug_level;
 #define log_error(fmt, ...) fprintf(stderr, "%s(): "fmt"\n", __func__, ##__VA_ARGS__)
